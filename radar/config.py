@@ -19,6 +19,9 @@ DEFAULTS = {
     "label": {},
     "tickers": False,
     "domain_sources": [],
+    # Which signals run. A field's pack switches off what that field cannot use (crypto has
+    # no Hugging Face models); config.json overrides one key without touching the rest.
+    "signals": {},
     "x_accounts": {"labs": [], "bloggers": []},
     "sitemaps": {},
     "topics": {},
@@ -61,6 +64,9 @@ def load(path: Path) -> dict:
         cfg[k] = {**default, **v} if isinstance(default, dict) and default and isinstance(v, dict) else v
     cfg["_dir"] = path.resolve().parent
     cfg["_profile"] = pack.get("name", "")
+    # A pack and config.json both add switches: the pack's default, then yours on top, so
+    # writing {"sellers": true} does not silently re-enable what the pack turned off.
+    cfg["signals"] = {**base.get("signals", {}), **(raw.get("signals") or {})}
     i18n.set_lang(cfg["lang"])
     terms.reset_stop()
     terms.add_stop(cfg["stop_words"])

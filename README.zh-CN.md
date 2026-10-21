@@ -251,6 +251,33 @@ python -m radar daily --out report.md
 
 **已知取舍**：Steam 的 `newreleases.xml` 已经停更（一年只有一条），所以游戏开发只有 itch.io 一个榜单源；`python -m radar daily` 首次运行会把当前榜单整版报一遍（当作这个领域的现状快照），之后每天只报新进榜的。
 
+### 信号开关
+
+每个领域该关哪些信号，包里已经写好了：
+
+```json
+"signals": {"hf": false, "revenue": false, "asks": false, "sellers": false, "tutorials": false}
+```
+
+所以日常跑不用再记一长串 `--skip`——`crypto` 和 `gamedev` 直接 `python -m radar daily`，就只跑这个领域有意义的信号。报告第二行会写明现在是什么领域、哪些被配置关掉了，缺的段落自己解释自己。
+
+打开一个关掉的（或关掉一个开着的），写一个 key 就够，其余继承包里：
+
+```json
+{"profile": "crypto", "signals": {"newsites": false, "sellers": true}}
+```
+
+配置里的关闭项和命令行 `--skip` 会合并，两个方向都是"关"，所以临时只跑一次就加 `--skip`；要长期打开得改配置。
+
+看有哪些领域、各自开哪些信号、一个月多少钱：
+
+```bash
+python -m radar profiles          # 三个领域一览
+python -m radar profiles crypto   # 单个领域
+```
+
+成本是 AIsa 那部分的估算，单价取自代码里记录的 2026-10 实价；不含 TrustMRR 和 GoAnyAPI（各自独立的 key）。报告末尾的「本次 AIsa 数据花费」是账单字段累加的真实值，跑几天就能校准估算。
+
 ## 报告长什么样
 
 2026-10-12 一次真实运行的节选（中文报告，`"lang": "zh"`）：

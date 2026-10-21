@@ -208,5 +208,12 @@
       "indie": "%indie%"
     },
     "weekday": 0
+  },
+  "signals": {
+    "hf": false,
+    "revenue": false,
+    "asks": false,
+    "sellers": false,
+    "tutorials": false
   }
 }

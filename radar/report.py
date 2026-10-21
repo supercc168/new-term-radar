@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import re
 
-from . import opportunity, sellers, config, judge, usecases
-from .i18n import t
+from . import opportunity, sellers, config, judge, profile, usecases
+from .i18n import lang, t
 
 SHOWN = 20
 OTHER_TERMS = 15
@@ -39,6 +39,17 @@ def leads(cfg: dict, blocks: dict[str, dict]) -> tuple[list[dict], dict]:
     rows.sort(key=lambda r: (-(r.get("named", 0) >= cut), -len(r["kinds"]),
                              min(KINDS.index(k) for k in r["kinds"]), opportunity.RANK[r["format"]], -r.get("named", 0)))
     return rows, status
+
+
+def field_lines(cfg: dict) -> list[str]:
+    """Which field this report watches, and what config.json switched off, so a missing
+    section explains itself instead of looking like a failure."""
+    field = profile.label(lang())
+    off = sorted(k for k, enabled in (cfg.get("signals") or {}).items() if not enabled)
+    bits = [t("field", field=field)] if field else []
+    if off:
+        bits.append(t("signals_off", names=", ".join(off)))
+    return ["", " · ".join(bits)] if bits else []
 
 
 def named(cfg: dict, lead: list[dict]) -> list[dict]:
@@ -294,7 +305,8 @@ def _status_lines(b: dict[str, dict], extra: dict[str, dict]) -> list[str]:
 
 
 def daily(cfg: dict, lead: list[dict], b: dict[str, dict], gsc: dict, rev: dict, summ: dict, extra: dict[str, dict]) -> str:
-    lines = [t("title"), *keyword_table(cfg, extra.get("usecases", {"skipped": True})), "", t("leads_h"), "", t("leads_cols"), "|---|---|---|---|---|---|"]
+    lines = [t("title"), *field_lines(cfg), *keyword_table(cfg, extra.get("usecases", {"skipped": True})), "",
+             t("leads_h"), "", t("leads_cols"), "|---|---|---|---|---|---|"]
     names_ = named(cfg, lead)
     for r in names_[:SHOWN]:
         ex = _cell(" / ".join(e[:50] for e in r["examples"][:2]))

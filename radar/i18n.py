@@ -16,6 +16,8 @@ T = {
     "note_trending": ("CoinGecko trending #{rank}, {chg} 24h", "CoinGecko 热搜第 {rank} 名,24h {chg}"),
     "note_defillama": ("DefiLlama: new protocol, TVL ${tvl}", "DefiLlama:新协议,TVL ${tvl}"),
     "new": ("new", "新"),
+    "field": ("Field: {field}", "领域:{field}"),
+    "signals_off": ("off by config: {names}", "配置关闭:{names}"),
     "domain_h": ("### ⑨ New in this field's own feeds", "### ⑨ 本领域专属源里的新面孔"),
     "domain_intro": ("{n} names from the feeds of this field, none of them reported before: {sources}.",
                      "本领域专属源里 {n} 个没报过的名字:{sources}。"),

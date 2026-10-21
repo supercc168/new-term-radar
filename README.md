@@ -249,6 +249,33 @@ The field feeds are all rankings: an entry is already a name, so nothing is pars
 
 **Known trade-offs**: Steam's `newreleases.xml` stopped updating (one item in a year), so game development has a single chart source, itch.io. The first `daily` run reports the whole current chart as the field's snapshot; every run after that only reports what entered it.
 
+### Signal switches
+
+Which signals a field cannot use is already written in its pack:
+
+```json
+"signals": {"hf": false, "revenue": false, "asks": false, "sellers": false, "tutorials": false}
+```
+
+So a daily run needs no long `--skip` list any more — `crypto` and `gamedev` run `python -m radar daily` and only the signals that mean something for that field run. The second line of the report says which field it is and what was switched off, so a missing section explains itself.
+
+Changing one switch takes one key; the rest still come from the pack:
+
+```json
+{"profile": "crypto", "signals": {"newsites": false, "sellers": true}}
+```
+
+Switches in config.json and `--skip` are merged, and both only ever turn things off: use `--skip` for a one-off run, edit the config to make it stick.
+
+The fields, what each switches on, and what a month costs:
+
+```bash
+python -m radar profiles          # all three
+python -m radar profiles crypto   # one
+```
+
+The cost is the AIsa part, estimated from the unit prices the modules record (October 2026); TrustMRR and GoAnyAPI have their own keys and are not in it. The report's own "spent" line is summed from the billing field of every call, so a few days of real runs calibrate the estimate.
+
 ## What a report looks like
 
 From a real run on 2026-10-12 (shortened):

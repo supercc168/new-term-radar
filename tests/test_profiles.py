@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from radar import config, domains, i18n, judge, profile, terms, usecases
+from radar import __main__ as cli
+from radar import config, cost, domains, i18n, judge, profile, report, terms, usecases
 
 
 @pytest.fixture(autouse=True)
@@ -110,6 +111,65 @@ def test_a_plain_config_keeps_the_original_ai_prompts(tmp_path):
     _cfg(tmp_path)
     assert "new model, product or repository" in usecases.system()
     assert "opus 5.5" in judge.system()
+
+
+# --- the signal switches -----------------------------------------------------------
+
+def test_a_pack_switches_off_what_its_field_cannot_use(tmp_path):
+    cfg = _cfg(tmp_path, profile="crypto")
+    assert cfg["signals"]["asks"] is False and cfg["signals"]["sellers"] is False
+    assert cfg["signals"]["hf"] is False
+    assert "x" not in cfg["signals"]              # on unless said otherwise
+
+
+def test_config_turns_one_switch_without_losing_the_packs_others(tmp_path):
+    cfg = _cfg(tmp_path, profile="crypto", signals={"sellers": True})
+    assert cfg["signals"]["sellers"] is True
+    assert cfg["signals"]["asks"] is False        # still off, from the pack
+
+
+def test_the_field_defaults_reach_the_run_as_skips(tmp_path):
+    cfg = _cfg(tmp_path, profile="crypto")
+    assert cli.effective_skip(set(), cfg) == {"asks", "hf", "revenue", "sellers", "tutorials"}
+    assert cli.effective_skip({"domain"}, cfg) == {"asks", "hf", "revenue", "sellers", "tutorials", "domain"}
+
+
+def test_an_unknown_switch_is_ignored_rather_than_skipping_nothing(tmp_path):
+    cfg = _cfg(tmp_path, profile="crypto", signals={"nonsense": False})
+    assert "nonsense" not in cli.effective_skip(set(), cfg)
+
+
+# --- what it costs -----------------------------------------------------------------
+
+def test_the_estimate_counts_only_what_runs(tmp_path):
+    cfg = _cfg(tmp_path, profile="crypto")
+    est = cost.estimate(cfg)
+    assert "asks" not in est and "sellers" not in est and "revenue" not in est
+    assert est["x"] == pytest.approx(16 * cost.X_ACCOUNT * cost.X_RUNS * cost.DAYS)
+
+
+def test_a_bigger_field_costs_more_only_in_its_accounts(tmp_path):
+    crypto = cost.estimate(_cfg(tmp_path, profile="crypto"))
+    gamedev = cost.estimate(_cfg(tmp_path, profile="gamedev"))
+    assert gamedev["usecases"] == crypto["usecases"]        # the table is one per run
+    assert gamedev["x"] > crypto["x"]                       # 21 accounts against 16
+
+
+def test_the_cost_line_puts_the_biggest_first(tmp_path):
+    text = cost.line(_cfg(tmp_path, profile="crypto"))
+    assert text.startswith("$") and "usecases" in text
+    assert text.index("usecases") < text.index("review")
+
+
+# --- the report explains itself ----------------------------------------------------
+
+def test_the_report_names_the_field_and_the_switches_that_are_off(tmp_path):
+    text = " ".join(report.field_lines(_cfg(tmp_path, profile="crypto")))
+    assert "crypto tokens and protocols" in text and "asks" in text and "hf" in text
+
+
+def test_a_plain_config_has_no_field_line(tmp_path):
+    assert report.field_lines(_cfg(tmp_path)) == []
 
 
 # --- the field's own feeds (parsing only) ------------------------------------------

@@ -44,10 +44,16 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from . import asks, breakout, config, domains, gsc, new_sites, notify, pains, report, review, revenue, seller_history, sellers, sitemaps, sources, store, usecases
+from . import asks, breakout, config, cost, domains, gsc, new_sites, notify, pains, profile, report, review, revenue, seller_history, sellers, sitemaps, sources, store, usecases
 from .i18n import t
 
 SKIPPABLE = {"x", "hf", "breakout", "sitemaps", "newsites", "revenue", "asks", "sellers", "gsc", "review", "judge", "usecases", "tutorials", "domain"}
+
+
+def effective_skip(given: set[str], cfg: dict) -> set[str]:
+    """What --skip asked for, plus every signal config.json (or the field's pack) switched
+    off. One set decides what runs, so a field's defaults need no command-line memory."""
+    return given | ({k for k, enabled in (cfg.get("signals") or {}).items() if not enabled} & SKIPPABLE)
 
 
 def run(fn, skip: bool = False) -> dict:
@@ -200,13 +206,36 @@ def serve_mcp() -> int:
     return 0
 
 
+def cmd_profiles(args) -> int:
+    """`profiles`: the fields this radar knows, what each switches on, and what it costs."""
+    names = [args.names[0]] if args.names else profile.available()
+    for name in names:
+        pack = profile.resolve(name)
+        cfg = profile.apply(config.DEFAULTS, pack)
+        label = pack.get("label") or {}
+        en, zh = label.get("en", ""), label.get("zh", "")
+        off = sorted(k for k, enabled in (cfg.get("signals") or {}).items() if not enabled)
+        feeds = ", ".join(cfg.get("domain_sources") or []) or t("dash")
+        accounts = len(sources.accounts(cfg))
+        print(f"{name:<8} {zh or en}" + (f" · {en}" if zh and en and en != zh else ""))
+        print(f"{'':<8} {accounts} X accounts" + ("" if accounts else " (add yours in config.json)") +
+              f" · own feeds: {feeds} · off: {', '.join(off) or 'none'}")
+        print(f"{'':<8} {cost.line(cfg)}")
+    quoted = ", ".join(f'"{n}"' for n in names[:3])
+    print(f'\n  In config.json: "profile": {quoted} — one field, or a list to watch several.')
+    print('  A signal in the off list comes back with "signals": {"name": true};')
+    print('  one that is on goes off with false, or for a single run with --skip name.')
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if (sys.argv[1:] if argv is None else argv)[:1] == ["mcp"]:
         return serve_mcp()
     prog = "python -m radar" if __package__ == "radar" else "new-term-radar"  # installed, the package has another name
     p = argparse.ArgumentParser(prog=prog, description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("command", choices=["daily", "sources", "keywords", "leads", "pains", "history"])
-    p.add_argument("names", nargs="*", help="for `keywords`: the names to read; for `history`: pull, read, sort or report")
+    p.add_argument("command", choices=["daily", "sources", "keywords", "leads", "pains", "history", "profiles"])
+    p.add_argument("names", nargs="*", help="for `keywords`: the names to read; for `history`: pull, read, sort or report; "
+                                          "for `profiles`: one field")
     p.add_argument("--repo", action="append", default=[], metavar="NAME=OWNER/REPO", help="for `keywords`: a name's GitHub repository")
     p.add_argument("--days", type=int, default=7, help="for `leads`: how far back")
     p.add_argument("--json", action="store_true", help="for `keywords` and `leads`: print JSON")
@@ -231,9 +260,14 @@ def main(argv: list[str] | None = None) -> int:
     state = Path(args.state)
     if args.command == "leads":
         return cmd_leads(args, state)
+    if args.command == "profiles":
+        return cmd_profiles(args)
     if args.command == "keywords" and not args.names:
         p.error("keywords: give at least one name")
     cfg = config.load(Path(args.config))
+    # A field's pack (or config.json) can switch a signal off: it joins --skip, so one code
+    # path decides what runs and the report says why a section is missing.
+    args.skip = effective_skip(args.skip, cfg)
     if "judge" in args.skip:
         cfg["judge"]["model"] = ""
     state.mkdir(parents=True, exist_ok=True)

@@ -1,14 +1,20 @@
 {
   "lang": "zh",
   "profile": "gamedev",
-
-  "_note": "profile 已经带上了这个领域的 X 账号、sitemap、停用词和提示词；这里只写你想改的。下面几项是常用旋钮，取消注释（删掉下划线）即可生效。",
-
+  "_note": "profile 带上了游戏开发的 X 账号、sitemap、停用词、提示词和信号开关（hf/revenue/asks/sellers/tutorials 已关）。这里只写你想改的，例如 \"signals\": {\"usecases\": false} 省掉每月约 $10 的新词表。看成本和开关用 python -m radar profiles gamedev。",
   "known_terms": [],
   "stop_words": [],
-
-  "breakout": {"window_days": 14, "min_stars": 200, "velocity_min": 150, "delta_min": 300},
-  "usecases": {"per_day": 3, "min_volume": 100, "min_daily": 200},
+  "breakout": {
+    "window_days": 14,
+    "min_stars": 200,
+    "velocity_min": 150,
+    "delta_min": 300
+  },
+  "usecases": {
+    "per_day": 3,
+    "min_volume": 100,
+    "min_daily": 200
+  },
   "topics": {
     "engines and tools": "\\b(engine|editor|plugin|addon|sdk|shader|tileset|animation|navmesh)\\b"
   }
