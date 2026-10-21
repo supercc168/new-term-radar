@@ -13,20 +13,29 @@ from __future__ import annotations
 import json
 import re
 
-from . import aisa
+from . import aisa, profile
 
 CHUNK = 25
-SYSTEM = (
+BASE = (
     "You sort terms for a radar that looks for new product names. For each term, score from 0.0 to 1.0 how likely "
     "it is the NAME of one specific product, model, tool, library, company or technique, as opposed to a common "
     "word, a generic category, a feature description or a fragment of a sentence. `examples` are places where the "
     "term appeared (posts, repository descriptions, model ids, URL paths); use them.\n"
-    "Names: 'opus 5.5', 'hyperframes', 'seedance', 'qwen image 2.1', 'strata' (when the examples show a project "
-    "called Strata).\n"
-    "Not names: 'dashboard', 'voice notes', 'pdf', 'lots', 'trained', 'video generator', 'new release', 'today'.\n"
+    "{names}\n"
+    "{not_names}\n"
     "A known company or product family alone ('google', 'claude') is a name, but an old one: score it 0.5.\n"
-    "Answer with JSON only, one object per term, in the same order: [{\"i\": 0, \"score\": 0.9}, ...]"
+    "Answer with JSON only, one object per term, in the same order: [{{\"i\": 0, \"score\": 0.9}}, ...]"
 )
+
+
+def system() -> str:
+    """The prompt, with the field's own examples (profile.py: judge.names_line)."""
+    return BASE.format(
+        names=profile.line("judge", "names_line",
+                           "Names: 'opus 5.5', 'hyperframes', 'seedance', 'qwen image 2.1', 'strata'."),
+        not_names=profile.line("judge", "not_names_line",
+                               "Not names: 'dashboard', 'voice notes', 'pdf', 'lots', 'trained', 'video generator'."),
+    )
 
 
 def parse(answer: str, n: int) -> dict[int, float]:
@@ -57,7 +66,7 @@ def score(rows: list[dict], model: str) -> dict:
         user = json.dumps([{"i": i, "term": r["term"], "examples": [e[:160] for e in r.get("examples", [])[:3]]}
                            for i, r in enumerate(chunk)], ensure_ascii=False)
         try:
-            scores = parse(aisa.chat(model, SYSTEM, user), len(chunk))
+            scores = parse(aisa.chat(model, system(), user), len(chunk))
         except aisa.AisaError as exc:
             return {"judged": judged, "error": str(exc)[:160]}
         for i, s in scores.items():

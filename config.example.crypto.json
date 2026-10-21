@@ -1,0 +1,13 @@
+{
+  "lang": "zh",
+  "profile": "crypto",
+
+  "_note": "profile 已经带上了币圈的 X 账号、sitemap、停用词、提示词，并打开了 $ticker 识别。这里只写你想改的。",
+
+  "known_terms": ["bitcoin", "ethereum", "solana", "binance", "coinbase"],
+  "stop_words": [],
+
+  "breakout": {"window_days": 14, "min_stars": 200, "velocity_min": 150, "delta_min": 300},
+  "usecases": {"per_day": 3, "min_volume": 100, "min_daily": 200},
+  "new_sites": {"queries": {"crypto": "%crypto%", "chain": "%chain%"}, "weekday": 0}
+}

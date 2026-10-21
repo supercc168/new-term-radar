@@ -40,3 +40,6 @@ packages = ["new_term_radar"]
 
 [tool.setuptools.package-dir]
 new_term_radar = "radar"
+
+[tool.setuptools.package-data]
+new_term_radar = ["profiles/*.json"]

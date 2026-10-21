@@ -222,6 +222,35 @@ python -m radar daily --skip x,hf --out report.md  # 其余全部，每天一次
 
 其他参数：`--skip` 可选 `x,hf,breakout,sitemaps,newsites,gsc,review,judge,usecases`；`--new-sites` 让每周信号今天就跑；`--mail` 发邮件（见下）；`--state DIR` 指定数据库和快照的目录。
 
+## 换领域：游戏开发、币圈
+
+雷达的引擎不分领域，分领域的是三样东西：这个领域哪些词是日常噪音、哪些源最先说出新名字、模型该怎么读一个词。这三样打包成 `radar/profiles/` 下的一个 JSON：
+
+| profile | 领域 | 自带 | 专属源（免费，无需 key） |
+|---|---|---|---|
+| `ai` | AI 产品与模型 | 默认，等同原版行为 | Hugging Face（本来就有） |
+| `gamedev` | 游戏与游戏开发 | 游戏圈的 X 账号、目录站 sitemap、停用词、判名词样例 | itch.io 新品热门榜 |
+| `crypto` | 币圈代币与协议 | 加密 KOL、CoinMarketCap/The Block 的 sitemap、停用词、`$ticker` 识别 | CoinGecko 热搜榜、DefiLlama 一周内新协议（TVL ≥ $100K） |
+
+```bash
+cp config.example.gamedev.json config.json   # 或 config.example.crypto.json
+python -m radar daily --out report.md
+```
+
+也可以直接在自己的 `config.json` 里写 `"profile": "gamedev"`，或者同时看两个领域：`"profile": ["gamedev", "crypto"]`（停用词、X 账号、sitemap、专属源取并集；提示词取第一个有它的 profile）。
+
+**profile 只提供默认值，config.json 永远优先。** 想改某个领域的停用词或账号，照常在 `config.json` 里写，不用动包里的文件。想加自己的领域：在 `config.json` 同目录建 `profiles/<名字>.json`，它会盖住同名的内置 profile；字段照抄 `radar/profiles/gamedev.json` 即可。
+
+三处按领域改变行为的地方，值得知道：
+
+- **`stop_words`**：游戏圈丢 `game / demo / early access / engine / unity / roguelike`，币圈丢 `airdrop / staking / listing / defi / token`。内置的 AI 停用词仍然生效，`reset_stop()` 保证连续加载两个 profile 不会互相污染。
+- **`tickers`**：币圈打开后，`$wif`、`$OP` 这类两字母、常小写的 ticker 才算名字（其他领域里 `$word` 是价格或 shell 变量，不算）。
+- **`breakout.match`**：GitHub 的爆发榜每天由 AI 仓库主导，所以游戏和币圈的 profile 各带一条正则，只留名字或描述里有本领域词汇的仓库。不配就不过滤（原版行为）。
+
+专属源都是榜单，每条本身就是一个名字，不做文本解析。曾经试过从 GameDeveloper、RPS、CoinDesk、Decrypt 的标题里提名字，没有 ① 信号那套 novelty 过滤，提出来的是 `fuse games ceo`、`their smart tvs` 这种东西，会污染候选表，所以砍了——同一批新闻交给站点 sitemap（③）按基线对比去发现，更稳。
+
+**已知取舍**：Steam 的 `newreleases.xml` 已经停更（一年只有一条），所以游戏开发只有 itch.io 一个榜单源；`python -m radar daily` 首次运行会把当前榜单整版报一遍（当作这个领域的现状快照），之后每天只报新进榜的。
+
 ## 报告长什么样
 
 2026-10-12 一次真实运行的节选（中文报告，`"lang": "zh"`）：

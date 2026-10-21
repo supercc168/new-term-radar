@@ -48,10 +48,17 @@ def repo_term(name: str) -> str:
 
 
 def score(repos: list[dict], before: dict[str, int] | None, now: datetime,
-          velocity_min: int = 200, delta_min: int = 400) -> list[dict]:
-    """Repos that break out, fastest first. `repos` items are GitHub search results."""
+          velocity_min: int = 200, delta_min: int = 400, match: str | None = None) -> list[dict]:
+    """Repos that break out, fastest first. `repos` items are GitHub search results.
+
+    `match` (config.json: breakout.match, set by a profile) keeps only repos whose name or
+    description carries the field's own vocabulary: the breakout list is led by AI repos
+    every day, and a crypto or game-dev report should not be filled with them."""
+    rx = re.compile(match, re.I) if match else None
     out = []
     for r in repos:
+        if rx and not rx.search(f"{r['full_name']} {r.get('description') or ''}"):
+            continue
         created = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
         age = max((now - created).total_seconds() / 86400, 1.0)
         stars = r["stargazers_count"]
@@ -90,7 +97,7 @@ def breakouts(cfg: dict, state: Path) -> dict:
             break
     path = state / "gh_stars.json.gz"
     before = snap.load(path)
-    rows = score(repos, before, datetime.now(timezone.utc), c["velocity_min"], c["delta_min"])
+    rows = score(repos, before, datetime.now(timezone.utc), c["velocity_min"], c["delta_min"], c.get("match"))
     if repos:
         snap.save(path, {r["full_name"]: r["stargazers_count"] for r in repos})
     flagged_path = state / "gh_flagged.json.gz"

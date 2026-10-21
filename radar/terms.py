@@ -13,8 +13,9 @@ _SPLIT = re.compile(r"[^a-z0-9.+#]+")
 _CAMEL = re.compile(r"(?<=[a-z])(?=[A-Z])")
 MIN_LEN = 3
 # Words that are everywhere in AI tooling; a surge in them is never a new term. config.json's
-# "stop_words" adds your own (add_stop).
-STOP = set("""
+# "stop_words" adds the field's own (add_stop); reset_stop() puts the built-in list back, so
+# loading a second profile in one process does not inherit the first one's words.
+_BASE = """
 a an and are as at be by can for from has have in into is it its of on or that the this to with your you
 using use used via based built make makes made new open source opensource simple fast free first best
 ai agent agents agentic llm llms mcp server servers skill skills tool tools toolkit plugin plugins claude code
@@ -23,12 +24,29 @@ github python typescript javascript node rust go web based local self hosted hos
 your all any more most one two three get set run runs build builder generate generator help helper helps
 assistant assistants chat bot bots automation automate automated workflow workflows system systems data
 md readme docs example examples demo test tests template templates collection awesome list curated
-""".split())
+""".split()
+STOP = set(_BASE)
+
+
+def reset_stop() -> None:
+    STOP.clear()
+    STOP.update(_BASE)
 
 
 def add_stop(words: list[str]) -> None:
     """Extra stop words from config.json ("stop_words"): the everyday words of your field."""
     STOP.update(w.lower() for w in words)
+
+
+TICKERS = False
+
+
+def set_tickers(on: bool) -> None:
+    """Crypto packs read "$wif" and "$op" as names: a ticker is often two letters and
+    usually lowercase, which `names()` would drop. Off for every other field, where a
+    $word is a price or a shell variable."""
+    global TICKERS
+    TICKERS = bool(on)
 
 
 def terms(text: str) -> set[str]:
@@ -44,6 +62,7 @@ def terms(text: str) -> set[str]:
 
 _URL = re.compile(r"https?://\S+|@\w+")
 _TOKEN = re.compile(r"[A-Za-z0-9][\w.+\-]*[\w+]|[A-Za-z0-9]")
+_DOLLAR = re.compile(r"\$([A-Za-z][A-Za-z0-9]{1,9})\b")
 
 
 def names(text: str, strong: bool = False) -> set[str]:
@@ -91,6 +110,11 @@ def names(text: str, strong: bool = False) -> set[str]:
         else:
             flush()
     flush()
+    if TICKERS:
+        for m in _DOLLAR.finditer(text):
+            tick = m.group(1).lower()
+            if tick not in STOP and not tick.isdigit() and len(tick) >= 2:
+                out.add(tick)
     return out
 
 

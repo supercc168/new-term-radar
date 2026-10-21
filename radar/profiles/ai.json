@@ -1,0 +1,18 @@
+{
+  "name": "ai",
+  "label": {"en": "AI products and models", "zh": "AI 产品与模型"},
+  "stop_words": [],
+  "tickers": false,
+  "benchmark": "gpts",
+  "judge": {
+    "names_line": "Names: 'opus 5.5', 'hyperframes', 'seedance', 'qwen image 2.1', 'strata' (when the examples show a project called Strata).",
+    "not_names_line": "Not names: 'dashboard', 'voice notes', 'pdf', 'lots', 'trained', 'video generator', 'new release', 'today'."
+  },
+  "usecases": {
+    "persona": "You help an SEO researcher who builds tool pages around new AI releases.",
+    "subject": "model, product or repository",
+    "keyword_rule": "A keyword is a noun phrase for a tool or a task, 2 to 4 words, lowercase: 'ai image detector', 'psd editor online', 'run llm locally', 'photo to anime', 'ai dance video generator', 'remove background from video'.",
+    "keyword_examples": "'ai image detector', 'psd editor online', 'run llm locally', 'photo to anime'"
+  },
+  "domain_sources": []
+}

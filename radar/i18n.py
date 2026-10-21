@@ -9,6 +9,21 @@ T = {
     "note_x": ("X: {n} accounts, {likes} likes", "X {n} 个账号 ♥{likes}"),
     "note_hf": ("Hugging Face: new at #{rank}", "HF 新进榜第 {rank} 名"),
     "note_hf_space": ("Hugging Face Spaces: new at #{rank}", "HF Spaces 新进榜第 {rank} 名"),
+    # the field's own feeds (radar/domains.py); what they carry depends on the profile
+    "kind_domain": ("⑨ new in the field", "⑨ 领域新面孔"),
+    "note_steam": ("Steam: released", "Steam:新发售"),
+    "note_itch": ("itch.io: new and popular", "itch.io:新品热门"),
+    "note_trending": ("CoinGecko trending #{rank}, {chg} 24h", "CoinGecko 热搜第 {rank} 名,24h {chg}"),
+    "note_defillama": ("DefiLlama: new protocol, TVL ${tvl}", "DefiLlama:新协议,TVL ${tvl}"),
+    "new": ("new", "新"),
+    "domain_h": ("### ⑨ New in this field's own feeds", "### ⑨ 本领域专属源里的新面孔"),
+    "domain_intro": ("{n} names from the feeds of this field, none of them reported before: {sources}.",
+                     "本领域专属源里 {n} 个没报过的名字:{sources}。"),
+    "domain_cols": ("| Name | Where | What it is |", "| 名字 | 从哪来 | 它是什么 |"),
+    "domain_none": ("nothing new in the field's feeds", "领域专属源里没有新面孔"),
+    "domain_err": ("Some feeds failed: {why}", "部分源失败:{why}"),
+    "st_domain": ("- ⑨ field feeds: {state}", "- ⑨ 领域源:{state}"),
+    "st_domain_ok": ("{n} new names", "{n} 个新名字"),
     "note_revenue": ("TrustMRR: ${usd} in 30 days, {growth}", "TrustMRR:30 天收入 ${usd},{growth}"),
     "note_revenue_zero": ("TrustMRR: from $0 to ${usd} in 30 days", "TrustMRR:从 $0 到 30 天 ${usd}"),
     "kind_revenue": ("⑥ revenue", "⑥ 收入"),
@@ -196,6 +211,10 @@ T = {
 def set_lang(lang: str) -> None:
     global _LANG
     _LANG = "zh" if str(lang).lower().startswith("zh") else "en"
+
+
+def lang() -> str:
+    return _LANG
 
 
 def t(key: str, **kw) -> str:

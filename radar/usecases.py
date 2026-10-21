@@ -52,7 +52,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import UA, aisa, competition, goanyapi, review, snap
+from . import UA, aisa, competition, goanyapi, profile, review, snap
 
 POSTS_KEPT = 12
 POST_CHARS = 400
@@ -70,16 +70,13 @@ STATE_DAYS = 30
 ASKED_MAX = 8              # names read in one `keywords` call: each costs several paid lookups
 SEARCH_TOOL = "get_twitter_tweet_advanced_search"
 VOLUME_TOOL = "post_dataforseo_keywords_gads_search_volume_live"
-SYSTEM = (
-    "You help an SEO researcher who builds tool pages around new AI releases. You get the NAME of a new model, product "
-    "or repository and EVIDENCE: popular posts about it and, for a repository, its README.\n"
+BASE = (
+    "{persona} You get the NAME of a new {subject} and EVIDENCE: popular posts about it and, for a repository, "
+    "its README.\n"
     "Step 1: work out the concrete jobs people are doing with it, according to the evidence.\n"
     "Step 2: for each job, write the KEYWORD a keyword tool would list for it: the short head term people type into "
     "Google when they want that job done and have never heard of this product.\n"
-    "A keyword is a noun phrase for a tool or a task, 2 to 4 words, lowercase: 'ai image detector', 'psd editor online', "
-    "'run llm locally', 'photo to anime', 'ai dance video generator', 'remove background from video'. Not a sentence, "
-    "not a feature description ('generate ultra detailed images', 'combine multiple reference images'), not a quality "
-    "('fast image generation'), not news.\n"
+    "{keyword_rule}\n"
     "Never use the NAME itself or the name of its maker. Prefer keywords with no names at all. When the evidence shows "
     "people comparing it to an established product or using it on a named platform, you may add up to two keywords "
     "built on that established name ('photoshop alternative', 'debloat macos') and set `brand` to true for them. Set "
@@ -87,9 +84,23 @@ SYSTEM = (
     "franchise or character name; false otherwise.\n"
     "Every keyword needs a short quote from the evidence showing people doing that job. No evidence of a concrete job "
     "(only an announcement, prices or benchmarks): return an empty list. Do not guess.\n"
-    "Answer with JSON only: {\"what_it_is\": \"one sentence\", \"use_cases\": [{\"phrase\": \"...\", \"evidence\": "
-    "\"short quote\", \"brand\": false}]}, at most 6, the most specific job first."
+    "Answer with JSON only: {{\"what_it_is\": \"one sentence\", \"use_cases\": [{{\"phrase\": \"...\", \"evidence\": "
+    "\"short quote\", \"brand\": false}}]}}, at most 6, the most specific job first."
 )
+
+DEFAULT_RULE = ("A keyword is a noun phrase for a tool or a task, 2 to 4 words, lowercase: 'ai image detector', "
+                "'psd editor online', 'run llm locally', 'photo to anime'. Not a sentence, not a feature description, "
+                "not a quality, not news.")
+
+
+def system() -> str:
+    """The prompt, with the field's own persona and keyword shape (profile.py: usecases)."""
+    return BASE.format(
+        persona=profile.line("usecases", "persona",
+                             "You help an SEO researcher who builds tool pages around new AI releases."),
+        subject=profile.line("usecases", "subject", "model, product or repository"),
+        keyword_rule=profile.line("usecases", "keyword_rule", DEFAULT_RULE),
+    )
 
 
 def due(names: list[str], seen: dict[str, dict], today: date, per_day: int, recheck_days: int) -> list[str]:
@@ -163,7 +174,7 @@ def propose(model: str, name: str, ev: dict) -> list[dict]:
         return []
     posts = "\n".join(f"- ({p['likes']} likes) @{p['by']}: {p['text'][:POST_CHARS]}" for p in ev["posts"])
     user = f"NAME: {name}\n\nPOSTS:\n{posts or '(none found)'}\n" + (f"\nREADME of {ev['repo']}:\n{ev['readme']}\n" if ev["readme"] else "")
-    return parse(aisa.chat(model, SYSTEM, user, max_tokens=900), name)
+    return parse(aisa.chat(model, system(), user, max_tokens=900), name)
 
 
 SCREEN = (

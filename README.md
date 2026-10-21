@@ -220,6 +220,35 @@ python -m radar daily --skip x,hf --out report.md  # everything else, once a day
 
 Other flags: `--skip` takes any of `x,hf,breakout,sitemaps,newsites,gsc,review,judge,usecases`; `--new-sites` runs the weekly signal today; `--mail` sends the report (below); `--state DIR` moves the database and snapshots.
 
+## Changing the field: game development, crypto
+
+The engine is field-agnostic. What changes between AI products, game development and crypto is three things: which words are everyday noise, which feeds say a new name first, and how a model should read a term. Those three are packed into a JSON under `radar/profiles/`:
+
+| profile | Field | Brings | Own feeds (free, no key) |
+|---|---|---|---|
+| `ai` | AI products and models | default, identical to the original behaviour | Hugging Face (already there) |
+| `gamedev` | Games and game development | game-press X accounts, directory sitemaps, stop words, judge examples | itch.io new-and-popular chart |
+| `crypto` | Tokens, protocols and chains | crypto KOLs, CoinMarketCap/The Block sitemaps, stop words, `$ticker` reading | CoinGecko trending list, DefiLlama protocols listed this week (TVL ≥ $100K) |
+
+```bash
+cp config.example.gamedev.json config.json   # or config.example.crypto.json
+python -m radar daily --out report.md
+```
+
+Or just put `"profile": "gamedev"` in your own `config.json`, or watch two fields at once: `"profile": ["gamedev", "crypto"]` (stop words, X accounts, sitemaps and feeds are unioned; prompts come from the first pack that has them).
+
+**A profile only supplies defaults; config.json always wins.** Change a field's stop words or accounts in `config.json` and leave the packaged file alone. To add your own field, put `profiles/<name>.json` next to `config.json` — it shadows the built-in pack of that name; copy the shape of `radar/profiles/gamedev.json`.
+
+Three places where a pack changes behaviour:
+
+- **`stop_words`** — games drop `game / demo / early access / engine / unity / roguelike`, crypto drops `airdrop / staking / listing / defi / token`. The built-in AI list still applies; `reset_stop()` keeps two profiles loaded in one process from contaminating each other.
+- **`tickers`** — with crypto on, `$wif` and `$OP` count as names (two letters, often lowercase). In other fields a `$word` is a price or a shell variable, not a name.
+- **`breakout.match`** — GitHub's breakout list is led by AI repos every day, so the game and crypto packs carry a regex that keeps only repos whose name or description uses the field's vocabulary. Leave it out for the original behaviour.
+
+The field feeds are all rankings: an entry is already a name, so nothing is parsed out of prose. Headlines were tried (GameDeveloper, RPS, CoinDesk, Decrypt) and dropped — without the novelty filter the ① signals have, they yielded `fuse games ceo` and `their smart tvs`, which poison the table. A site's sitemap (③) catches the same news against a baseline, which is the better tool.
+
+**Known trade-offs**: Steam's `newreleases.xml` stopped updating (one item in a year), so game development has a single chart source, itch.io. The first `daily` run reports the whole current chart as the field's snapshot; every run after that only reports what entered it.
+
 ## What a report looks like
 
 From a real run on 2026-10-12 (shortened):

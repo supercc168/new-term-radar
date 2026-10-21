@@ -2,16 +2,23 @@
 
 Everything has a default except the X accounts and the sitemaps, which only you can
 choose. Secrets are never read from this file; they come from the environment.
+
+"profile" picks the field (see profile.py): one name, or a list to watch several.
+Its words and prompts become the defaults; anything written here still wins.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from . import i18n, terms
+from . import i18n, profile, terms
 
 DEFAULTS = {
     "lang": "en",
+    "profile": [],
+    "label": {},
+    "tickers": False,
+    "domain_sources": [],
     "x_accounts": {"labs": [], "bloggers": []},
     "sitemaps": {},
     "topics": {},
@@ -45,13 +52,19 @@ def load(path: Path) -> dict:
     if not path.exists():
         raise SystemExit(f"{path} not found: copy config.example.json to {path.name} and edit it")
     raw = json.loads(path.read_text())
+    pack = profile.resolve(raw.get("profile"), path.resolve().parent)
+    profile.set_active(pack)
+    base = profile.apply(DEFAULTS, pack)
     cfg = {}
-    for k, default in DEFAULTS.items():
+    for k, default in base.items():
         v = raw.get(k, default)
         cfg[k] = {**default, **v} if isinstance(default, dict) and default and isinstance(v, dict) else v
     cfg["_dir"] = path.resolve().parent
+    cfg["_profile"] = pack.get("name", "")
     i18n.set_lang(cfg["lang"])
+    terms.reset_stop()
     terms.add_stop(cfg["stop_words"])
+    terms.set_tickers(cfg["tickers"])
     return cfg
 
 

@@ -15,6 +15,8 @@ Signals:
   ④ gsc       queries your own site got impressions for, for the first time (optional)
   ⑤ review    leads from 14 days ago checked in Google Trends; hit rate per signal (AIsa)
   usecases    the generic terms behind today's names, sized against a benchmark keyword (AIsa)
+  ⑨ domain    the field's own feeds: Steam and itch.io releases, CoinGecko trending, DefiLlama's
+              new protocols (free; which ones depends on `profile` in config.json)
 
   python -m radar keywords "name one" "name two" [--repo "name one=owner/repo"] [--json]
   python -m radar leads    [--days 7] [--json]
@@ -42,10 +44,10 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from . import asks, breakout, config, gsc, new_sites, notify, pains, report, review, revenue, seller_history, sellers, sitemaps, sources, store, usecases
+from . import asks, breakout, config, domains, gsc, new_sites, notify, pains, report, review, revenue, seller_history, sellers, sitemaps, sources, store, usecases
 from .i18n import t
 
-SKIPPABLE = {"x", "hf", "breakout", "sitemaps", "newsites", "revenue", "asks", "sellers", "gsc", "review", "judge", "usecases", "tutorials"}
+SKIPPABLE = {"x", "hf", "breakout", "sitemaps", "newsites", "revenue", "asks", "sellers", "gsc", "review", "judge", "usecases", "tutorials", "domain"}
 
 
 def run(fn, skip: bool = False) -> dict:
@@ -94,6 +96,7 @@ def cmd_daily(args, cfg: dict, state: Path) -> int:
             args.asks or date.today().weekday() == cfg["asks"]["weekday"])),
         "seller": run(lambda: sellers.sellers(cfg, state), "sellers" in args.skip or not (
             args.sellers or date.today().weekday() == cfg["sellers"]["weekday"])),
+        "domain": run(lambda: domains.new_terms(cfg, state), "domain" in args.skip),
     }
     found = run(lambda: gsc.gsc_new(cfg), "gsc" in args.skip)
     lead, judged = report.leads(cfg, blocks)

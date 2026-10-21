@@ -10,7 +10,7 @@ SHOWN = 20
 OTHER_TERMS = 15
 POSTS_SHOWN = 3   # posts quoted in full per term
 # signal key -> label key, in the order of how early the signal comes
-KINDS = ["x", "hf", "breakout", "sitemap", "newsite", "revenue", "ask", "seller", "usecase", "cosearch", "watch"]
+KINDS = ["x", "hf", "breakout", "sitemap", "newsite", "revenue", "ask", "seller", "usecase", "cosearch", "watch", "domain"]
 
 
 def leads(cfg: dict, blocks: dict[str, dict]) -> tuple[list[dict], dict]:
@@ -102,6 +102,20 @@ def _breakout_lines(bo: dict, cfg: dict) -> list[str]:
     return lines + [f"| {'🆕 ' if r.get('new') else ''}[{r['repo']}](https://github.com/{r['repo']}) | {r['stars']} | {r['velocity']} | "
                     f"{'+' + str(r['delta']) if r['delta'] is not None else t('dash')} | {r['age_days']} | "
                     f"{_cell(r['description'][:60])} |" for r in repos]
+
+
+def _domain_lines(dm: dict, cfg: dict) -> list[str]:
+    """What the field's own feeds carried today: a release, a listing, a new protocol."""
+    if dm.get("skipped"):
+        return []
+    lines = ["", t("domain_h"), ""]
+    rows = dm.get("terms") or []
+    if not rows:
+        return lines + [t("recent_none", why=_state(dm, t("domain_none")))]
+    lines.append(t("domain_intro", n=len(rows), sources=", ".join(dm.get("sources") or [])))
+    lines += ["", t("domain_cols"), "|---|---|---|"]
+    return lines + [f"| **{r['term']}** | {r.get('note') or t('dash')} | {_cell((r.get('examples') or [''])[0][:80])} |"
+                    for r in rows[:SHOWN]]
 
 
 def _new_site_lines(ns: dict, cfg: dict) -> list[str]:
@@ -260,6 +274,9 @@ def _status_lines(b: dict[str, dict], extra: dict[str, dict]) -> list[str]:
     ak = b.get("ask", {"skipped": True})
     if not ak.get("skipped"):
         lines.append(t("st_asks", state=_state(ak, "" if ak.get("error") else t("st_asks_ok", read=ak["read"], asks=ak["asks"]))))
+    dm = b.get("domain", {"skipped": True})
+    if not dm.get("skipped"):
+        lines.append(t("st_domain", state=_state(dm, "" if dm.get("error") else t("st_domain_ok", n=len(dm.get("terms") or [])))))
     rv = b.get("revenue", {"skipped": True})
     if not rv.get("skipped") or rv.get("no_key"):
         ok = t("revenue_nokey_short") if rv.get("no_key") else "" if rv.get("error") else t("st_revenue_ok", n=rv["read"]) + \
@@ -295,6 +312,7 @@ def daily(cfg: dict, lead: list[dict], b: dict[str, dict], gsc: dict, rev: dict,
         rows = recent.get("rows") or []
         lines += [f"- **{r['term']}**: {r['note']}" for r in rows] if rows \
             else [t("recent_none", why=recent.get("error") or t("no_new_names"))]
+    lines += _domain_lines(b.get("domain", {"skipped": True}), cfg)
     lines += _breakout_lines(b["breakout"], cfg)
     lines += _new_site_lines(b.get("newsite", {"skipped": True}), cfg)
     lines += _revenue_lines(b.get("revenue", {"skipped": True}), cfg)

@@ -1,0 +1,15 @@
+{
+  "lang": "zh",
+  "profile": "gamedev",
+
+  "_note": "profile 已经带上了这个领域的 X 账号、sitemap、停用词和提示词；这里只写你想改的。下面几项是常用旋钮，取消注释（删掉下划线）即可生效。",
+
+  "known_terms": [],
+  "stop_words": [],
+
+  "breakout": {"window_days": 14, "min_stars": 200, "velocity_min": 150, "delta_min": 300},
+  "usecases": {"per_day": 3, "min_volume": 100, "min_daily": 200},
+  "topics": {
+    "engines and tools": "\\b(engine|editor|plugin|addon|sdk|shader|tileset|animation|navmesh)\\b"
+  }
+}
