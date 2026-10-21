@@ -179,5 +179,12 @@
   },
   "breakout": {
     "match": "\\b(crypto|chain|onchain|wallet|token|defi|swap|dex|evm|solidity|ethereum|solana|bitcoin|nft|dao|staking|liquidity|bridge|memecoin|trading|exchange)\\b"
+  },
+  "new_sites": {
+    "queries": {
+      "crypto": "%crypto%",
+      "chain": "%chain%"
+    },
+    "weekday": 0
   }
 }

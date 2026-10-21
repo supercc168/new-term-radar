@@ -201,5 +201,12 @@
   },
   "breakout": {
     "match": "\\b(game|games|gamedev|unity|unreal|godot|steam|itch|sprite|tileset|shader|engine|mod|rom|emulat|rpg|rogue|platformer|asset|3d|2d)\\b"
+  },
+  "new_sites": {
+    "queries": {
+      "game": "%game%",
+      "indie": "%indie%"
+    },
+    "weekday": 0
   }
 }
